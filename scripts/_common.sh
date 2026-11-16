@@ -36,7 +36,7 @@ run_capture() {
     TMP_CONFIG="$(mktemp "${TMPDIR:-/tmp}/screenshots-config.XXXXXX")"
     trap '[ -z "$TMP_CONFIG" ] || rm -f "$TMP_CONFIG"' EXIT
     cfg="$TMP_CONFIG"
-    printf '%s\n' '{"url":"http://placeholder.invalid","enableSemantics":true,"screens":[{"name":"home"}]}' > "$cfg"
+    printf '%s\n' '{"url":"http://placeholder.invalid","enableSemantics":true,"discover":true,"screens":[{"name":"home"}]}' > "$cfg"
   fi
   args=(capture --config "$cfg" "$@" --out "$OUT_DIR")
   # Only override the config theme when THEME is set explicitly.

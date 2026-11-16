@@ -42,7 +42,7 @@ scripts/screenshots-local.sh ../my_app                # runs flutter build web, 
 npm run screenshots -- http://localhost:8080          # same as the first line
 ```
 
-Each script takes an optional output directory as the last argument (default `./screenshots` in your current directory). Without a config the scripts capture a single `home` screen. Set `SCREENSHOTS_CONFIG` to use your own config for multiple screens.
+Each script takes an optional output directory as the last argument (default `./screenshots` in your current directory). Without a config the scripts capture the `home` screen and then discover more screens by clicking (see [Discovery mode](#discovery-mode-and-resilience)). Set `SCREENSHOTS_CONFIG` to use your own config for multiple screens.
 
 | Env variable | Meaning |
 | --- | --- |
@@ -52,13 +52,13 @@ Each script takes an optional output directory as the last argument (default `./
 | `SCREENSHOTS_CONFIG` | Path to a config file |
 | `SCREENSHOT_USER`, `SCREENSHOT_PASSWORD` | Credentials for `${...}` placeholders in a config `login` |
 
-The CLI also runs without a config file when you pass `--url` or `--web-dir` and no `screenshots.config.json` exists. It then captures a `home` screen on all devices with `enableSemantics` on.
+The CLI also runs without a config file when you pass `--url` or `--web-dir` and no `screenshots.config.json` exists. It then captures the `home` screen on all devices with `enableSemantics` and discovery mode on. No text such as button labels is assumed.
 
 ### Commands
 
 - `list-devices`: print presets with store and pixel sizes
 - `init [--out file]`: write an example config
-- `capture [--config f] [--url u] [--web-dir d] [--device names...] [--out dir] [--theme light|dark|both] [--build]`
+- `capture [--config f] [--url u] [--web-dir d] [--device names...] [--out dir] [--theme light|dark|both] [--nav-timeout ms] [--action-timeout ms] [--retries n] [--discover|--no-discover] [--max-screens n] [--build]`
 
 Output goes to `<outDir>/<apple|google>/<device>/<locale>/<NN>-<name>.png`.
 
@@ -72,12 +72,25 @@ Output goes to `<outDir>/<apple|google>/<device>/<locale>/<NN>-<name>.png`.
 | `locales` | Browser locales, default `["en-US"]` |
 | `readySelector` | Element that signals the app loaded, default `flt-glass-pane, flutter-view` |
 | `settleMs` | Delay after load, default 1500 |
+| `navigationTimeoutMs` | Max time to open a page and wait for the Flutter view, default 60000 (`--nav-timeout`) |
+| `actionTimeoutMs` | Max time per click or type step, default 10000 (`--action-timeout`) |
+| `retries` | Extra attempts when opening a page fails, default 2 (`--retries`) |
+| `discover` | Click through clickable elements and capture each new screen, default false (`--discover`) |
+| `maxScreens` | Cap for discovery mode including the start screen, default 10 (`--max-screens`) |
 | `enableSemantics` | Click `flt-semantics-placeholder` so text and buttons can be found by text |
 | `theme` | `light` (default), `dark` or `both`. See [Light and dark mode](#light-and-dark-mode) |
 | `login` | Sign-in settings for screens that need it. See [Screens that need a login](#screens-that-need-a-login) |
 | `screens[]` | `name`, `path` (`#/settings` or `/settings`), `waitFor` (ms or selector), `theme` (`light`/`dark`, overrides the global setting), `requiresLogin` (boolean), `actions` |
 
 Actions: `{"click": "Label or CSS selector"}`, `{"clickAt": [x, y]}` (CSS pixels), `{"type": "selector", "text": "..."}`, `{"scroll": 400}`, `{"wait": 500}`.
+
+## Discovery mode and resilience
+
+Pages are opened with `domcontentloaded` and then the tool waits for the Flutter view element, because Flutter web assets can keep the `load` event pending past 30 seconds. A failed open is retried.
+
+A step that fails (for example a click on text that does not exist) logs a warning naming the screen and step, the screenshot of the current state is still taken, and the run continues. A screen that cannot be opened at all is skipped with a warning.
+
+With `--discover` (on by default when no config file exists), the tool opens the start route, enables semantics, and finds clickable elements (`flt-semantics` buttons, links and tabs, `[role=button]`, `a[href]`, `button`). It clicks them one at a time, reopens the start route between attempts, and screenshots each screen that differs from the ones already seen (different URL or different image). Files are named after the element label, for example `02-get-started.png`. At most `--max-screens` screens are captured. Elements that were not clickable, or that did not lead to a new screen, are listed at the end of the run.
 
 ## Light and dark mode
 

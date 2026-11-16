@@ -1,8 +1,9 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { chromium, type BrowserContext, type Page } from "playwright";
+import { chromium, type BrowserContext, type Locator, type Page } from "playwright";
 import { screenNeedsLogin, themesFor, type Action, type Config, type Screen } from "./config.js";
-import { findDevice, viewportFor } from "./sizes.js";
+import { findDevice, viewportFor, type DevicePreset } from "./sizes.js";
+import { CLICKABLE_SELECTOR, formatSkipped, hashBuffer, registerScreen, shortError, uniqueName, type Skipped } from "./discover.js";
 
 export function readPngSize(buf: Buffer): { width: number; height: number } {
   if (buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) throw new Error("Not a PNG");
@@ -36,15 +37,23 @@ export function buildScreenUrl(base: string, p?: string): string {
   return new URL(p.replace(/^\//, ""), base.endsWith("/") ? base : base + "/").toString();
 }
 
-async function runAction(page: Page, a: Action): Promise<void> {
+export function describeAction(a: Action): string {
+  if ("click" in a) return `click "${a.click}"`;
+  if ("clickAt" in a) return `clickAt [${a.clickAt.join(", ")}]`;
+  if ("type" in a) return `type into "${a.type}"`; // never include the typed text
+  if ("scroll" in a) return `scroll ${a.scroll}`;
+  return `wait ${a.wait}ms`;
+}
+
+async function runAction(page: Page, a: Action, timeout: number): Promise<void> {
   if ("click" in a) {
     // Plain text first (Flutter canvas apps need semantics), otherwise treat as a selector
     const loc = a.click.startsWith("text=") || /^[.#\[]|[>\s]/.test(a.click) ? page.locator(a.click) : page.getByText(a.click);
-    await loc.first().click();
+    await loc.first().click({ timeout });
   } else if ("clickAt" in a) {
     await page.mouse.click(a.clickAt[0], a.clickAt[1]);
   } else if ("type" in a) {
-    await page.locator(a.type).first().fill(a.text);
+    await page.locator(a.type).first().fill(a.text, { timeout });
   } else if ("scroll" in a) {
     await page.mouse.move(100, 300);
     await page.mouse.wheel(0, a.scroll);
@@ -53,17 +62,30 @@ async function runAction(page: Page, a: Action): Promise<void> {
   }
 }
 
-async function openReady(page: Page, config: Config, url: string): Promise<void> {
-  await page.goto(url, { waitUntil: "load" });
-  await page.waitForSelector(config.readySelector, { timeout: 60_000 });
+/**
+ * Open a URL. Waits for domcontentloaded (Flutter's heavy assets can keep "load" pending for a long time)
+ * and then for the Flutter view element. Retries, since the first attempt on a cold server often times out.
+ */
+async function openReady(page: Page, config: Config, url: string, warn: (m: string) => void = () => {}): Promise<void> {
+  const attempts = config.retries + 1;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: config.navigationTimeoutMs });
+      await page.waitForSelector(config.readySelector, { timeout: config.navigationTimeoutMs });
+      break;
+    } catch (e) {
+      if (attempt >= attempts) throw e;
+      warn(`Warning: opening ${url} failed (attempt ${attempt}/${attempts}): ${shortError(e)}. Retrying.`);
+    }
+  }
   if (config.enableSemantics) {
     await page.locator("flt-semantics-placeholder").evaluate((el) => (el as HTMLElement).click(), undefined, { timeout: 3000 }).catch(() => {});
   }
   await page.waitForTimeout(config.settleMs);
 }
 
-async function waitForSpec(page: Page, spec: number | string | undefined): Promise<void> {
-  if (typeof spec === "string") await page.waitForSelector(spec, { timeout: 30_000 });
+async function waitForSpec(page: Page, spec: number | string | undefined, timeout: number): Promise<void> {
+  if (typeof spec === "string") await page.waitForSelector(spec, { timeout });
   else if (typeof spec === "number") await page.waitForTimeout(spec);
 }
 
@@ -74,14 +96,14 @@ async function performLogin(page: Page, config: Config, baseUrl: string): Promis
   await openReady(page, config, buildScreenUrl(baseUrl, login.path));
   for (let i = 0; i < actions.length; i++) {
     try {
-      await runAction(page, actions[i]);
+      await runAction(page, actions[i], config.actionTimeoutMs);
     } catch {
       // Do not include the underlying error: it can echo typed values.
       throw new Error(`Login failed at login.actions[${i}]. Check the selector and that the login page is reachable.`);
     }
   }
   try {
-    await waitForSpec(page, login.waitFor);
+    await waitForSpec(page, login.waitFor, config.navigationTimeoutMs);
   } catch {
     throw new Error("Login did not complete: login.waitFor was not satisfied. Check the credentials.");
   }
@@ -96,6 +118,98 @@ export function headersForRequest(requestUrl: string, baseUrl: string, headers: 
     return undefined;
   }
   return { ...existing, ...headers };
+}
+
+async function saveShot(page: Page, file: string, device: DevicePreset): Promise<void> {
+  mkdirSync(path.dirname(file), { recursive: true });
+  await page.screenshot({ path: file });
+  const size = readPngSize(readFileSync(file));
+  if (size.width !== device.width || size.height !== device.height) {
+    throw new Error(`${file} is ${size.width}x${size.height}, expected ${device.width}x${device.height}`);
+  }
+}
+
+/** Visible label of an element: aria-label, text, title or value. */
+async function labelOf(loc: Locator): Promise<string> {
+  const text = await loc
+    .evaluate((el) => (el.getAttribute("aria-label") || (el as HTMLElement).innerText || el.getAttribute("title") || el.getAttribute("value") || "").trim(), undefined, { timeout: 2000 })
+    .catch(() => "");
+  return text.replace(/\s+/g, " ").slice(0, 60);
+}
+
+/**
+ * Discovery mode: click each clickable element of the start screen, one at a time
+ * (reopening the start route between attempts), and screenshot every screen that looks new.
+ */
+export async function discoverScreens(
+  ctx: BrowserContext,
+  config: Config,
+  baseUrl: string,
+  device: DevicePreset,
+  locale: string,
+  themeSuffix: string | undefined,
+  log: (m: string) => void,
+): Promise<string[]> {
+  const written: string[] = [];
+  const skipped: Skipped[] = [];
+  const startUrl = buildScreenUrl(baseUrl, config.screens[0]?.path);
+  const budget = config.maxScreens - config.screens.length;
+  const page = await ctx.newPage();
+  try {
+    await openReady(page, config, startUrl, log);
+    const seen = new Set<string>();
+    registerScreen(seen, page.url(), hashBuffer(await page.screenshot()));
+    const total = await page.locator(CLICKABLE_SELECTOR).count();
+    log(`Discovery: found ${total} clickable element(s) on ${startUrl}, capturing up to ${Math.max(budget, 0)} more screen(s)`);
+    const usedNames = new Set(config.screens.map((s) => s.name));
+    let index = config.screens.length;
+    let found = 0;
+    for (let n = 0; n < total; n++) {
+      if (found >= budget) {
+        log(`Discovery: reached --max-screens (${config.maxScreens}), stopping`);
+        break;
+      }
+      let label = `element ${n + 1}`;
+      try {
+        if (n > 0) await openReady(page, config, startUrl, log);
+        const el = page.locator(CLICKABLE_SELECTOR).nth(n);
+        const text = await labelOf(el);
+        if (text) label = text;
+        if (!(await el.isVisible())) throw new Error("not visible on the start screen");
+        try {
+          await el.click({ timeout: config.actionTimeoutMs });
+        } catch (e) {
+          // Covered or off-screen: fall back to a click at its center.
+          const box = await el.boundingBox({ timeout: 2000 }).catch(() => null);
+          if (!box || box.width === 0 || box.height === 0) throw e;
+          await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        }
+        await page.waitForTimeout(Math.max(config.settleMs, 500));
+        const shot = await page.screenshot();
+        if (!registerScreen(seen, page.url(), hashBuffer(shot))) {
+          skipped.push({ label, reason: "clicked, but no new screen appeared" });
+          continue;
+        }
+        const name = uniqueName(label, `screen-${index + 1}`, usedNames);
+        const file = outputPath(config.outDir, device.store, device.name, locale, index, name, themeSuffix);
+        await saveShot(page, file, device);
+        log(`${file} (${device.width}x${device.height}) <- "${label}"`);
+        written.push(file);
+        index++;
+        found++;
+      } catch (e) {
+        skipped.push({ label, reason: shortError(e) });
+        log(`Warning: discovery: could not click "${label}": ${shortError(e)}`);
+      }
+    }
+    if (skipped.length) {
+      log(`Discovery: ${skipped.length} element(s) did not lead to a new screen:`);
+      for (const line of formatSkipped(skipped)) log(line);
+    }
+  } finally {
+    await page.close().catch(() => {});
+  }
+  return written;
 }
 
 export async function capture(config: Config, baseUrl: string, log: (m: string) => void = console.log): Promise<string[]> {
@@ -155,23 +269,46 @@ export async function capture(config: Config, baseUrl: string, log: (m: string) 
               }
               try {
                 const page = await ctx.newPage();
-                await openReady(page, config, buildScreenUrl(baseUrl, screen.path));
-                await waitForSpec(page, screen.waitFor);
-                for (const a of screen.actions ?? []) await runAction(page, a);
-                if (screen.actions?.length) await page.waitForTimeout(500);
-
-                const file = outputPath(config.outDir, device.store, device.name, locale, i, screen.name, themes.length > 1 ? theme : undefined);
-                mkdirSync(path.dirname(file), { recursive: true });
-                await page.screenshot({ path: file });
-                const size = readPngSize(readFileSync(file));
-                if (size.width !== device.width || size.height !== device.height) {
-                  throw new Error(`${file} is ${size.width}x${size.height}, expected ${device.width}x${device.height}`);
+                try {
+                  await openReady(page, config, buildScreenUrl(baseUrl, screen.path), log);
+                  try {
+                    await waitForSpec(page, screen.waitFor, config.actionTimeoutMs);
+                  } catch (e) {
+                    log(`Warning: screen "${screen.name}": waitFor ${String(screen.waitFor)} not satisfied: ${shortError(e)}. Capturing anyway.`);
+                  }
+                  const acts = screen.actions ?? [];
+                  for (let k = 0; k < acts.length; k++) {
+                    try {
+                      await runAction(page, acts[k], config.actionTimeoutMs);
+                    } catch (e) {
+                      log(`Warning: screen "${screen.name}": step ${k + 1} (${describeAction(acts[k])}) failed: ${shortError(e).replace(/\.$/, "")}. Continuing.`);
+                    }
+                  }
+                  if (acts.length) await page.waitForTimeout(500);
+                  const file = outputPath(config.outDir, device.store, device.name, locale, i, screen.name, themes.length > 1 ? theme : undefined);
+                  await saveShot(page, file, device);
+                  log(`${file} (${device.width}x${device.height})`);
+                  written.push(file);
+                } catch (e) {
+                  log(`Warning: screen "${screen.name}" skipped: ${shortError(e)}`);
+                } finally {
+                  await page.close().catch(() => {});
                 }
-                log(`${file} (${size.width}x${size.height})`);
-                written.push(file);
-                await page.close();
               } finally {
                 if (!needsLogin) await ctx.close();
+              }
+            }
+          }
+          if (config.discover) {
+            for (const theme of themesFor(config, {})) {
+              const ctx = await newContext(theme, !!login && config.screens.some((s) => screenNeedsLogin(config, s)));
+              try {
+                const suffix = themesFor(config, {}).length > 1 ? theme : undefined;
+                written.push(...(await discoverScreens(ctx, config, baseUrl, device, locale, suffix, log)));
+              } catch (e) {
+                log(`Warning: discovery skipped on ${device.name} ${locale} ${theme}: ${shortError(e)}`);
+              } finally {
+                await ctx.close();
               }
             }
           }
