@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseConfig } from "../src/config.js";
-import { buildScreenUrl, outputPath, readPngSize } from "../src/capture.js";
+import { parseConfig, themesFor, screenNeedsLogin } from "../src/config.js";
+import { buildScreenUrl, outputPath, readPngSize, resolveAction, substituteEnv } from "../src/capture.js";
 import { resolveFile } from "../src/server.js";
 import path from "node:path";
 
@@ -42,4 +42,56 @@ describe("capture helpers", () => {
 describe("resolveFile", () => {
   it("blocks traversal", () => expect(resolveFile(path.resolve("examples/demo-app"), "/../../package.json")).toBeNull());
   it("serves existing file", () => expect(resolveFile(path.resolve("examples/demo-app"), "/index.html")).not.toBeNull());
+});
+
+describe("theme config", () => {
+  it("defaults to light", () => expect(parseConfig(ok).theme).toBe("light"));
+  it("accepts both", () => expect(parseConfig({ ...ok, theme: "both" }).theme).toBe("both"));
+  it("rejects bad theme", () => expect(() => parseConfig({ ...ok, theme: "blue" })).toThrow(/theme must be/));
+  it("themesFor honors mode and per-screen override", () => {
+    expect(themesFor({ theme: "both" }, {})).toEqual(["light", "dark"]);
+    expect(themesFor({ theme: "dark" }, {})).toEqual(["dark"]);
+    expect(themesFor({ theme: "both" }, { theme: "dark" })).toEqual(["dark"]);
+  });
+  it("adds theme suffix to output path", () => {
+    expect(outputPath("o", "apple", "d", "en-US", 1, "home", "dark")).toBe(path.join("o", "apple", "d", "en-US", "02-home-dark.png"));
+  });
+});
+
+describe("login config", () => {
+  const login = { actions: [{ type: "#u", text: "${SCREENSHOT_USER}" }] };
+  it("accepts login and requiresLogin", () => {
+    const c = parseConfig({ url: "u", login, screens: [{ name: "a", requiresLogin: true }, { name: "b" }] });
+    expect(screenNeedsLogin(c, c.screens[0])).toBe(true);
+    expect(screenNeedsLogin(c, c.screens[1])).toBe(false);
+  });
+  it("allScreens applies to every screen", () => {
+    const c = parseConfig({ url: "u", login: { ...login, allScreens: true }, screens: [{ name: "a" }] });
+    expect(screenNeedsLogin(c, c.screens[0])).toBe(true);
+  });
+  it("accepts storageState only", () => {
+    parseConfig({ url: "u", login: { storageState: "auth.json" }, screens: [{ name: "a" }] });
+  });
+  it("rejects empty login", () => expect(() => parseConfig({ url: "u", login: {}, screens: [{ name: "a" }] })).toThrow(/login needs/));
+  it("rejects bad login action", () => {
+    expect(() => parseConfig({ url: "u", login: { actions: [{ nope: 1 }] }, screens: [{ name: "a" }] })).toThrow(/login.actions\[0\]/);
+  });
+  it("rejects requiresLogin without login", () => {
+    expect(() => parseConfig({ url: "u", screens: [{ name: "a", requiresLogin: true }] })).toThrow(/needs a top-level login/);
+  });
+  it("rejects non-string headers", () => {
+    expect(() => parseConfig({ url: "u", login: { headers: { a: 1 } }, screens: [{ name: "a" }] })).toThrow(/headers/);
+  });
+});
+
+describe("env substitution", () => {
+  it("replaces variables", () => expect(substituteEnv("a-${X}-${Y}", { X: "1", Y: "2" })).toBe("a-1-2"));
+  it("leaves plain text alone", () => expect(substituteEnv("plain $ {X}", {})).toBe("plain $ {X}"));
+  it("names the missing variable but no values", () => {
+    expect(() => substituteEnv("${SCREENSHOT_PASSWORD}", { SCREENSHOT_USER: "secret" })).toThrow(/SCREENSHOT_PASSWORD is not set/);
+  });
+  it("resolves action strings", () => {
+    expect(resolveAction({ type: "#u", text: "${U}" }, { U: "bob" })).toEqual({ type: "#u", text: "bob" });
+    expect(resolveAction({ wait: 5 })).toEqual({ wait: 5 });
+  });
 });

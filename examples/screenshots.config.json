@@ -3,8 +3,19 @@
   "outDir": "screenshots",
   "devices": ["iphone-6.9", "play-phone", "play-feature-graphic"],
   "settleMs": 200,
+  "theme": "both",
+  "login": {
+    "path": "#/login",
+    "actions": [
+      { "type": "#user", "text": "${SCREENSHOT_USER}" },
+      { "type": "#pass", "text": "${SCREENSHOT_PASSWORD}" },
+      { "click": "#signin" }
+    ],
+    "waitFor": "#welcome"
+  },
   "screens": [
     { "name": "home", "path": "#/" },
-    { "name": "clicked", "path": "#/settings", "actions": [{ "click": "#go" }] }
+    { "name": "clicked", "path": "#/settings", "actions": [{ "click": "#go" }] },
+    { "name": "account", "path": "#/account", "requiresLogin": true }
   ]
 }

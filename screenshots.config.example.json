@@ -5,9 +5,20 @@
   "locales": ["en-US"],
   "settleMs": 2000,
   "enableSemantics": true,
+  "theme": "both",
+  "login": {
+    "path": "#/login",
+    "actions": [
+      { "type": "input[aria-label='Email']", "text": "${SCREENSHOT_USER}" },
+      { "type": "input[aria-label='Password']", "text": "${SCREENSHOT_PASSWORD}" },
+      { "click": "Sign in" }
+    ],
+    "waitFor": 2000
+  },
   "screens": [
     { "name": "home", "path": "#/" },
     { "name": "settings", "path": "#/settings", "waitFor": 1000 },
+    { "name": "account", "path": "#/account", "requiresLogin": true },
     { "name": "details-dark", "path": "#/", "theme": "dark", "actions": [{ "click": "Get started" }, { "wait": 500 }] }
   ]
 }

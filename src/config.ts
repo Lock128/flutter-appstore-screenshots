@@ -14,6 +14,25 @@ export interface Screen {
   waitFor?: number | string;
   actions?: Action[];
   theme?: "light" | "dark";
+  /** Capture this screen signed in (requires a top-level login config). */
+  requiresLogin?: boolean;
+}
+
+export type ThemeMode = "light" | "dark" | "both";
+
+export interface Login {
+  /** Page to open before running the login actions (defaults to the app root). */
+  path?: string;
+  /** Actions that perform the login. Strings may contain ${ENV_VAR}. */
+  actions?: Action[];
+  /** Milliseconds or selector to wait for after the login actions. */
+  waitFor?: number | string;
+  /** Playwright storage state JSON (cookies, localStorage) of an already signed-in session. */
+  storageState?: string;
+  /** Extra HTTP headers sent with every request, e.g. Authorization. May contain ${ENV_VAR}. */
+  headers?: Record<string, string>;
+  /** Treat every screen as requiring login (default false). */
+  allScreens?: boolean;
 }
 
 export interface Config {
@@ -26,6 +45,8 @@ export interface Config {
   readySelector: string;
   settleMs: number;
   enableSemantics: boolean;
+  theme: ThemeMode;
+  login?: Login;
   screens: Screen[];
 }
 
@@ -51,6 +72,8 @@ export function parseConfig(raw: unknown): Config {
   if (!Array.isArray(locales) || locales.length === 0 || locales.some((l) => typeof l !== "string")) {
     fail("locales must be a non-empty array of strings");
   }
+  if (r.theme !== undefined && !isThemeMode(r.theme)) fail("theme must be light, dark or both");
+  const login = r.login === undefined ? undefined : parseLogin(r.login);
   if (!Array.isArray(r.screens) || r.screens.length === 0) fail("screens must be a non-empty array");
 
   const names = new Set<string>();
@@ -67,6 +90,8 @@ export function parseConfig(raw: unknown): Config {
       fail(`screens[${i}].waitFor must be milliseconds or a selector`);
     }
     if (o.theme !== undefined && o.theme !== "light" && o.theme !== "dark") fail(`screens[${i}].theme must be light or dark`);
+    if (o.requiresLogin !== undefined && typeof o.requiresLogin !== "boolean") fail(`screens[${i}].requiresLogin must be a boolean`);
+    if (o.requiresLogin === true && !login) fail(`screens[${i}].requiresLogin needs a top-level login config`);
     if (o.actions !== undefined) {
       if (!Array.isArray(o.actions)) fail(`screens[${i}].actions must be an array`);
       (o.actions as unknown[]).forEach((a, j) => validateAction(a, `screens[${i}].actions[${j}]`));
@@ -84,8 +109,51 @@ export function parseConfig(raw: unknown): Config {
     readySelector: typeof r.readySelector === "string" ? r.readySelector : "flt-glass-pane, flutter-view",
     settleMs: typeof r.settleMs === "number" ? r.settleMs : 1500,
     enableSemantics: r.enableSemantics === true,
+    theme: (r.theme as ThemeMode | undefined) ?? "light",
+    login,
     screens,
   };
+}
+
+function isThemeMode(v: unknown): v is ThemeMode {
+  return v === "light" || v === "dark" || v === "both";
+}
+
+function parseLogin(raw: unknown): Login {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return fail("login must be an object");
+  const o = raw as Record<string, unknown>;
+  if (o.path !== undefined && typeof o.path !== "string") fail("login.path must be a string");
+  if (o.waitFor !== undefined && typeof o.waitFor !== "number" && typeof o.waitFor !== "string") {
+    fail("login.waitFor must be milliseconds or a selector");
+  }
+  if (o.storageState !== undefined && (typeof o.storageState !== "string" || !o.storageState)) {
+    fail("login.storageState must be a file path");
+  }
+  if (o.allScreens !== undefined && typeof o.allScreens !== "boolean") fail("login.allScreens must be a boolean");
+  if (o.actions !== undefined) {
+    if (!Array.isArray(o.actions)) fail("login.actions must be an array");
+    (o.actions as unknown[]).forEach((a, j) => validateAction(a, `login.actions[${j}]`));
+  }
+  if (o.headers !== undefined) {
+    const h = o.headers;
+    if (typeof h !== "object" || h === null || Array.isArray(h) || Object.values(h).some((v) => typeof v !== "string")) {
+      fail("login.headers must be an object of strings");
+    }
+  }
+  if (!o.storageState && !(Array.isArray(o.actions) && o.actions.length) && !o.headers) {
+    fail("login needs actions, storageState or headers");
+  }
+  return o as unknown as Login;
+}
+
+/** Themes to capture for a screen. A per-screen theme overrides the global mode. */
+export function themesFor(config: Pick<Config, "theme">, screen: Pick<Screen, "theme">): Array<"light" | "dark"> {
+  if (screen.theme) return [screen.theme];
+  return config.theme === "both" ? ["light", "dark"] : [config.theme];
+}
+
+export function screenNeedsLogin(config: Pick<Config, "login">, screen: Pick<Screen, "requiresLogin">): boolean {
+  return !!config.login && (screen.requiresLogin ?? config.login.allScreens ?? false);
 }
 
 function validateAction(a: unknown, where: string): void {
