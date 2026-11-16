@@ -173,6 +173,11 @@ function validateAction(a: unknown, where: string): void {
   } else fail(`${where} must have one of click, clickAt, type, scroll, wait`);
 }
 
+/** Built-in config used when no config file exists: all devices, one "home" screen, semantics on. */
+export function defaultConfig(source: { url?: string; webDir?: string }): Config {
+  return parseConfig({ ...source, enableSemantics: true, screens: [{ name: "home" }] });
+}
+
 export function loadConfig(file: string): Config {
   let text: string;
   try {

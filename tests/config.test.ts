@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseConfig, themesFor, screenNeedsLogin } from "../src/config.js";
+import { defaultConfig, parseConfig, themesFor, screenNeedsLogin } from "../src/config.js";
 import { buildScreenUrl, outputPath, readPngSize, resolveAction, substituteEnv } from "../src/capture.js";
 import { resolveFile } from "../src/server.js";
 import path from "node:path";
@@ -94,4 +94,17 @@ describe("env substitution", () => {
     expect(resolveAction({ type: "#u", text: "${U}" }, { U: "bob" })).toEqual({ type: "#u", text: "bob" });
     expect(resolveAction({ wait: 5 })).toEqual({ wait: 5 });
   });
+});
+
+describe("defaultConfig", () => {
+  it("builds a usable config from a url", () => {
+    const c = defaultConfig({ url: "http://x" });
+    expect(c.url).toBe("http://x");
+    expect(c.screens.map((s) => s.name)).toEqual(["home"]);
+    expect(c.enableSemantics).toBe(true);
+    expect(c.devices.length).toBeGreaterThan(3);
+    expect(c.locales).toEqual(["en-US"]);
+  });
+  it("accepts webDir", () => expect(defaultConfig({ webDir: "build/web" }).webDir).toBe("build/web"));
+  it("needs a source", () => expect(() => defaultConfig({})).toThrow(/url, webDir/));
 });

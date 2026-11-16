@@ -57,7 +57,7 @@ async function openReady(page: Page, config: Config, url: string): Promise<void>
   await page.goto(url, { waitUntil: "load" });
   await page.waitForSelector(config.readySelector, { timeout: 60_000 });
   if (config.enableSemantics) {
-    await page.locator("flt-semantics-placeholder").evaluate((el) => (el as HTMLElement).click()).catch(() => {});
+    await page.locator("flt-semantics-placeholder").evaluate((el) => (el as HTMLElement).click(), undefined, { timeout: 3000 }).catch(() => {});
   }
   await page.waitForTimeout(config.settleMs);
 }
