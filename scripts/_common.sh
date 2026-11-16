@@ -15,7 +15,6 @@ abs_path() {
 }
 
 OUT_DIR="$(abs_path "${OUT_DIR:-screenshots}")"
-THEME="${THEME:-both}"
 
 setup_tool() {
   cd "$REPO_ROOT"
@@ -39,7 +38,9 @@ run_capture() {
     cfg="$TMP_CONFIG"
     printf '%s\n' '{"url":"http://placeholder.invalid","enableSemantics":true,"screens":[{"name":"home"}]}' > "$cfg"
   fi
-  args=(capture --config "$cfg" "$@" --out "$OUT_DIR" --theme "$THEME")
+  args=(capture --config "$cfg" "$@" --out "$OUT_DIR")
+  # Only override the config theme when THEME is set explicitly.
+  [ -z "${THEME:-}" ] || args+=(--theme "$THEME")
   # shellcheck disable=SC2206
   [ -z "${DEVICES:-}" ] || args+=(--device ${DEVICES})
   node dist/cli.js "${args[@]}"

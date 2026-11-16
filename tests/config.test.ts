@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig, parseConfig, themesFor, screenNeedsLogin } from "../src/config.js";
-import { buildScreenUrl, outputPath, readPngSize, resolveAction, substituteEnv } from "../src/capture.js";
+import { buildScreenUrl, headersForRequest, outputPath, readPngSize, resolveAction, substituteEnv } from "../src/capture.js";
 import { resolveFile } from "../src/server.js";
 import path from "node:path";
 
@@ -107,4 +107,11 @@ describe("defaultConfig", () => {
   });
   it("accepts webDir", () => expect(defaultConfig({ webDir: "build/web" }).webDir).toBe("build/web"));
   it("needs a source", () => expect(() => defaultConfig({})).toThrow(/url, webDir/));
+});
+
+describe("headersForRequest", () => {
+  it("adds headers for the app origin only", () => {
+    expect(headersForRequest("http://h:1/a.js", "http://h:1/", { Authorization: "x" }, { a: "b" })).toEqual({ a: "b", Authorization: "x" });
+    expect(headersForRequest("https://www.gstatic.com/f.js", "http://h:1/", { Authorization: "x" })).toBeUndefined();
+  });
 });

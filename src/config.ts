@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { DEVICES } from "./sizes.js";
 
 export type Action =
@@ -191,5 +192,8 @@ export function loadConfig(file: string): Config {
   } catch (e) {
     throw new Error(`Config ${file} is not valid JSON: ${(e as Error).message}`);
   }
-  return parseConfig(json);
+  const config = parseConfig(json);
+  // A relative storageState is relative to the config file, whichever way the tool is started.
+  if (config.login?.storageState) config.login.storageState = path.resolve(path.dirname(file), config.login.storageState);
+  return config;
 }

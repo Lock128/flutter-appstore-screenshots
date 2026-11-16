@@ -47,7 +47,7 @@ Each script takes an optional output directory as the last argument (default `./
 | Env variable | Meaning |
 | --- | --- |
 | `DEVICES` | Space separated presets, e.g. `"iphone-6.9 play-phone"` (default all) |
-| `THEME` | `light`, `dark` or `both` (script default `both`) |
+| `THEME` | `light`, `dark` or `both` (default: the config `theme`, else `light`; when set it overrides the config) |
 | `OUT_DIR` | Output directory (default `screenshots`) |
 | `SCREENSHOTS_CONFIG` | Path to a config file |
 | `SCREENSHOT_USER`, `SCREENSHOT_PASSWORD` | Credentials for `${...}` placeholders in a config `login` |
@@ -91,7 +91,7 @@ In your Flutter app, use `MaterialApp(themeMode: ThemeMode.system, theme: ..., d
 
 ## Screens that need a login
 
-Add a top-level `login` block and mark screens with `"requiresLogin": true`. Screens without it stay signed out. Each login screenshot runs in a fresh browser context: the tool opens `login.path`, runs `login.actions`, waits for `login.waitFor`, then opens the screen.
+Add a top-level `login` block and mark screens with `"requiresLogin": true`. Screens without it stay signed out. The tool signs in once per device, locale and theme (opens `login.path`, runs `login.actions`, waits for `login.waitFor`) and reuses that browser context for all login screens. Screens without `requiresLogin` use a fresh signed-out context.
 
 ```json
 {
@@ -117,8 +117,8 @@ SCREENSHOT_USER=demo SCREENSHOT_PASSWORD=secret node dist/cli.js capture
 | `path` | Page to open before the actions (default: app root) |
 | `actions` | Same action types as screens. `${ENV_VAR}` is replaced in `click`, `type` and `text` values |
 | `waitFor` | Milliseconds or selector to wait for after the actions |
-| `storageState` | Path to a Playwright storage state JSON (cookies, localStorage) for an already signed-in session. Use it instead of `actions` for SSO or token logins |
-| `headers` | Extra HTTP headers for requests, e.g. `{"Authorization": "Bearer ${API_TOKEN}"}` |
+| `storageState` | Path to a Playwright storage state JSON, relative to the config file (cookies, localStorage) for an already signed-in session. Use it instead of `actions` for SSO or token logins |
+| `headers` | Extra HTTP headers, sent only to the app's own origin (never to CDNs or other hosts), e.g. `{"Authorization": "Bearer ${API_TOKEN}"}` |
 | `allScreens` | Treat every screen as requiring login |
 
 Notes:

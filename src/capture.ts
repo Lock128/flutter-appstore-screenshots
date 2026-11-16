@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { chromium, type Page } from "playwright";
+import { chromium, type BrowserContext, type Page } from "playwright";
 import { screenNeedsLogin, themesFor, type Action, type Config, type Screen } from "./config.js";
 import { findDevice, viewportFor } from "./sizes.js";
 
@@ -88,6 +88,16 @@ async function performLogin(page: Page, config: Config, baseUrl: string): Promis
   await page.waitForTimeout(500);
 }
 
+/** Add the login headers only to requests that go to the app's own origin. */
+export function headersForRequest(requestUrl: string, baseUrl: string, headers: Record<string, string>, existing: Record<string, string> = {}): Record<string, string> | undefined {
+  try {
+    if (new URL(requestUrl).origin !== new URL(baseUrl).origin) return undefined;
+  } catch {
+    return undefined;
+  }
+  return { ...existing, ...headers };
+}
+
 export async function capture(config: Config, baseUrl: string, log: (m: string) => void = console.log): Promise<string[]> {
   const login = config.login;
   // Fail early (before launching a browser) if a referenced env var is missing.
@@ -101,44 +111,72 @@ export async function capture(config: Config, baseUrl: string, log: (m: string) 
     for (const deviceName of config.devices) {
       const device = findDevice(deviceName);
       for (const locale of config.locales) {
-        for (let i = 0; i < config.screens.length; i++) {
-          const screen: Screen = config.screens[i];
-          const themes = themesFor(config, screen);
-          const needsLogin = screenNeedsLogin(config, screen);
-          for (const theme of themes) {
-            const ctx = await browser.newContext({
-              viewport: viewportFor(device),
-              deviceScaleFactor: device.scale,
-              isMobile: device.isMobile,
-              hasTouch: device.isMobile,
-              locale,
-              colorScheme: theme,
-              ...(needsLogin && login?.storageState ? { storageState: login.storageState } : {}),
-              ...(needsLogin && login?.headers
-                ? { extraHTTPHeaders: Object.fromEntries(Object.entries(login.headers).map(([k, v]) => [k, substituteEnv(v)])) }
-                : {}),
+        const newContext = async (theme: "light" | "dark", signedIn: boolean): Promise<BrowserContext> => {
+          const ctx = await browser.newContext({
+            viewport: viewportFor(device),
+            deviceScaleFactor: device.scale,
+            isMobile: device.isMobile,
+            hasTouch: device.isMobile,
+            locale,
+            colorScheme: theme,
+            ...(signedIn && login?.storageState ? { storageState: login.storageState } : {}),
+          });
+          if (signedIn && login?.headers) {
+            const headers = Object.fromEntries(Object.entries(login.headers).map(([k, v]) => [k, substituteEnv(v)]));
+            // Scoped to the app origin so tokens never reach CDNs or other third parties.
+            await ctx.route("**/*", (route) => {
+              const h = headersForRequest(route.request().url(), baseUrl, headers, route.request().headers());
+              return h ? route.continue({ headers: h }) : route.continue();
             });
-            try {
-              const page = await ctx.newPage();
-              if (needsLogin) await performLogin(page, config, baseUrl);
-              await openReady(page, config, buildScreenUrl(baseUrl, screen.path));
-              await waitForSpec(page, screen.waitFor);
-              for (const a of screen.actions ?? []) await runAction(page, a);
-              if (screen.actions?.length) await page.waitForTimeout(500);
-
-              const file = outputPath(config.outDir, device.store, device.name, locale, i, screen.name, themes.length > 1 ? theme : undefined);
-              mkdirSync(path.dirname(file), { recursive: true });
-              await page.screenshot({ path: file });
-              const size = readPngSize(readFileSync(file));
-              if (size.width !== device.width || size.height !== device.height) {
-                throw new Error(`${file} is ${size.width}x${size.height}, expected ${device.width}x${device.height}`);
+          }
+          return ctx;
+        };
+        // One signed-in context per theme, signed in once and reused by all login screens.
+        const loggedIn = new Map<string, BrowserContext>();
+        try {
+          for (let i = 0; i < config.screens.length; i++) {
+            const screen: Screen = config.screens[i];
+            const themes = themesFor(config, screen);
+            const needsLogin = screenNeedsLogin(config, screen);
+            for (const theme of themes) {
+              let ctx: BrowserContext;
+              if (needsLogin) {
+                let shared = loggedIn.get(theme);
+                if (!shared) {
+                  shared = await newContext(theme, true);
+                  loggedIn.set(theme, shared);
+                  const loginPage = await shared.newPage();
+                  await performLogin(loginPage, config, baseUrl);
+                  await loginPage.close();
+                }
+                ctx = shared;
+              } else {
+                ctx = await newContext(theme, false);
               }
-              log(`${file} (${size.width}x${size.height})`);
-              written.push(file);
-            } finally {
-              await ctx.close();
+              try {
+                const page = await ctx.newPage();
+                await openReady(page, config, buildScreenUrl(baseUrl, screen.path));
+                await waitForSpec(page, screen.waitFor);
+                for (const a of screen.actions ?? []) await runAction(page, a);
+                if (screen.actions?.length) await page.waitForTimeout(500);
+
+                const file = outputPath(config.outDir, device.store, device.name, locale, i, screen.name, themes.length > 1 ? theme : undefined);
+                mkdirSync(path.dirname(file), { recursive: true });
+                await page.screenshot({ path: file });
+                const size = readPngSize(readFileSync(file));
+                if (size.width !== device.width || size.height !== device.height) {
+                  throw new Error(`${file} is ${size.width}x${size.height}, expected ${device.width}x${device.height}`);
+                }
+                log(`${file} (${size.width}x${size.height})`);
+                written.push(file);
+                await page.close();
+              } finally {
+                if (!needsLogin) await ctx.close();
+              }
             }
           }
+        } finally {
+          for (const c of loggedIn.values()) await c.close();
         }
       }
     }
