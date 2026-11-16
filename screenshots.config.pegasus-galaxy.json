@@ -10,8 +10,8 @@
   "url": "https://app.pegasus-galaxy.net",
   "outDir": "screenshots/pegasus-galaxy",
   "devices": [
-    "iphone-6.9",
-    "iphone-6.5",
+    "iphone-6.3",
+    "iphone-6.1",
     "ipad-13",
     "play-phone",
     "play-tablet-10"
@@ -40,7 +40,7 @@
         "text": "${SCREENSHOT_PASSWORD}"
       },
       {
-        "click": "text=/^Sign In$/"
+        "click": "Launch"
       }
     ],
     "waitFor": 6000

@@ -106,6 +106,7 @@ Output goes to `<outDir>/<apple|google>/<device>/<locale>/<NN>-<name>.png`.
 | `maxScreens` | Cap for discovery mode including the start screen, default 10 (`--max-screens`) |
 | `enableSemantics` | Click `flt-semantics-placeholder` so text and buttons can be found by text |
 | `theme` | `light` (default), `dark` or `both`. See [Light and dark mode](#light-and-dark-mode) |
+| `permissions`, `geolocation` | Browser permissions granted up front (e.g. `["geolocation"]`) so no access prompt appears, and the fake `{latitude, longitude}` the app sees |
 | `login` | Sign-in settings for screens that need it. See [Screens that need a login](#screens-that-need-a-login) |
 | `screens[]` | `name`, `path` (`#/settings` or `/settings`), `waitFor` (ms or selector), `theme` (`light`/`dark`, overrides the global setting), `requiresLogin` (boolean), `actions` |
 
@@ -175,6 +176,8 @@ Notes:
 
 | Preset | Store | Pixels | Viewport @scale |
 | --- | --- | --- | --- |
+| iphone-6.3 | Apple | 1206x2622 | 402x874 @3x |
+| iphone-6.1 | Apple | 1179x2556 | 393x852 @3x |
 | iphone-6.9 | Apple | 1320x2868 | 440x956 @3x |
 | iphone-6.5 | Apple | 1284x2778 | 428x926 @3x |
 | iphone-5.5 | Apple | 1242x2208 | 414x736 @3x |

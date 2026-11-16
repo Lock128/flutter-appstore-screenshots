@@ -1,9 +1,9 @@
 {
   "url": "https://app.teamcorner.app",
-  "outDir": "screenshots/teamcorner",
+  "outDir": "screenshots/hcvfl",
   "devices": [
-    "iphone-6.9",
-    "iphone-6.5",
+    "iphone-6.3",
+    "iphone-6.1",
     "ipad-13",
     "play-phone",
     "play-tablet-10"

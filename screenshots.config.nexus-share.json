@@ -10,8 +10,8 @@
   "url": "https://app.nexus-share.com",
   "outDir": "screenshots/nexus-share",
   "devices": [
-    "iphone-6.9",
-    "iphone-6.5",
+    "iphone-6.3",
+    "iphone-6.1",
     "ipad-13",
     "play-phone",
     "play-tablet-10"

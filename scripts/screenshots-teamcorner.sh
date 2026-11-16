@@ -63,7 +63,7 @@ fi
 export SCREENSHOT_USER SCREENSHOT_PASSWORD DEVICES THEME OUT_DIR
 export SCREENSHOTS_CONFIG="$REPO_ROOT/screenshots.config.teamcorner.json"
 
-echo "Capturing $URL as $SCREENSHOT_USER into $OUT_DIR"
+echo "Capturing $URL into $OUT_DIR (credentials loaded, not shown)"
 setup_tool
 # shellcheck disable=SC2086
 run_capture --url "$URL" $EXTRA_FLAGS

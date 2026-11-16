@@ -10,8 +10,8 @@
   "url": "https://app.unscratchtheworld.lockhead.cloud",
   "outDir": "screenshots/places-unlock",
   "devices": [
-    "iphone-6.9",
-    "iphone-6.5",
+    "iphone-6.3",
+    "iphone-6.1",
     "ipad-13",
     "play-phone",
     "play-tablet-10"
@@ -19,6 +19,13 @@
   "locales": [
     "en-US"
   ],
+  "permissions": [
+    "geolocation"
+  ],
+  "geolocation": {
+    "latitude": 52.52,
+    "longitude": 13.405
+  },
   "settleMs": 3000,
   "enableSemantics": true,
   "theme": "both",

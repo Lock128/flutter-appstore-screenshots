@@ -13,6 +13,8 @@ export interface DevicePreset {
 }
 
 export const DEVICES: DevicePreset[] = [
+  { name: "iphone-6.3", store: "apple", description: "iPhone 6.3in (16 Pro, 17)", width: 1206, height: 2622, scale: 3, isMobile: true },
+  { name: "iphone-6.1", store: "apple", description: "iPhone 6.1in (15, 16)", width: 1179, height: 2556, scale: 3, isMobile: true },
   { name: "iphone-6.9", store: "apple", description: "iPhone 6.9in (16 Pro Max)", width: 1320, height: 2868, scale: 3, isMobile: true },
   { name: "iphone-6.5", store: "apple", description: "iPhone 6.5in (11 Pro Max, XS Max)", width: 1284, height: 2778, scale: 3, isMobile: true },
   { name: "iphone-5.5", store: "apple", description: "iPhone 5.5in (8 Plus)", width: 1242, height: 2208, scale: 3, isMobile: true },

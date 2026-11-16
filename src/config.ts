@@ -59,6 +59,10 @@ export interface Config {
   /** Maximum number of screens to capture in discovery mode, including the start screen. */
   maxScreens: number;
   theme: ThemeMode;
+  /** Browser permissions granted up front so no prompt appears, e.g. ["geolocation"]. */
+  permissions?: string[];
+  /** Fake position reported to the app when geolocation is granted. */
+  geolocation?: { latitude: number; longitude: number };
   login?: Login;
   screens: Screen[];
 }
@@ -92,6 +96,15 @@ export function parseConfig(raw: unknown): Config {
   if (r.discover !== undefined && typeof r.discover !== "boolean") fail("discover must be a boolean");
   if (r.maxScreens !== undefined && (!Number.isInteger(r.maxScreens) || (r.maxScreens as number) < 1)) fail("maxScreens must be a positive integer");
   if (r.theme !== undefined && !isThemeMode(r.theme)) fail("theme must be light, dark or both");
+  if (r.permissions !== undefined && (!Array.isArray(r.permissions) || r.permissions.some((p) => typeof p !== "string"))) {
+    fail("permissions must be an array of strings");
+  }
+  if (r.geolocation !== undefined) {
+    const g = r.geolocation as Record<string, unknown> | null;
+    if (typeof g !== "object" || g === null || typeof g.latitude !== "number" || typeof g.longitude !== "number") {
+      fail("geolocation must be an object with numeric latitude and longitude");
+    }
+  }
   const login = r.login === undefined ? undefined : parseLogin(r.login);
   if (!Array.isArray(r.screens) || r.screens.length === 0) fail("screens must be a non-empty array");
 
@@ -134,6 +147,8 @@ export function parseConfig(raw: unknown): Config {
     discover: r.discover === true,
     maxScreens: (r.maxScreens as number | undefined) ?? 10,
     theme: (r.theme as ThemeMode | undefined) ?? "light",
+    permissions: r.permissions as string[] | undefined,
+    geolocation: r.geolocation as Config["geolocation"],
     login,
     screens,
   };

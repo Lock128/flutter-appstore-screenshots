@@ -1,7 +1,7 @@
 {
   "webDir": "examples/demo-app",
   "outDir": "screenshots",
-  "devices": ["iphone-6.9", "play-phone", "play-feature-graphic"],
+  "devices": ["iphone-6.3", "play-phone", "play-feature-graphic"],
   "settleMs": 200,
   "theme": "both",
   "login": {

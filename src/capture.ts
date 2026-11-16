@@ -269,6 +269,8 @@ export async function capture(config: Config, baseUrl: string, log: (m: string) 
             hasTouch: device.isMobile,
             locale,
             colorScheme: theme,
+            ...(config.permissions ? { permissions: config.permissions } : {}),
+            ...(config.geolocation ? { geolocation: config.geolocation } : {}),
             ...(signedIn && login?.storageState ? { storageState: login.storageState } : {}),
           });
           if (signedIn && login?.headers) {
@@ -282,7 +284,7 @@ export async function capture(config: Config, baseUrl: string, log: (m: string) 
           return ctx;
         };
         // One signed-in context per theme, signed in once and reused by all login screens.
-        const loggedIn = new Map<string, BrowserContext>();
+        const loggedIn = new Map<string, BrowserContext | null>();
         try {
           for (let i = 0; i < config.screens.length; i++) {
             const screen: Screen = config.screens[i];
@@ -292,12 +294,27 @@ export async function capture(config: Config, baseUrl: string, log: (m: string) 
               let ctx: BrowserContext;
               if (needsLogin) {
                 let shared = loggedIn.get(theme);
-                if (!shared) {
-                  shared = await newContext(theme, true);
+                if (shared === undefined) {
+                  try {
+                    const c = await newContext(theme, true);
+                    try {
+                      const loginPage = await c.newPage();
+                      await performLogin(loginPage, config, baseUrl);
+                      await loginPage.close();
+                      shared = c;
+                    } catch (e) {
+                      await c.close().catch(() => {});
+                      throw e;
+                    }
+                  } catch (e) {
+                    log(`Warning: login failed for ${device.name} ${locale} ${theme}: ${shortError(e)}. Screens that need login are skipped.`);
+                    shared = null;
+                  }
                   loggedIn.set(theme, shared);
-                  const loginPage = await shared.newPage();
-                  await performLogin(loginPage, config, baseUrl);
-                  await loginPage.close();
+                }
+                if (!shared) {
+                  log(`Warning: screen "${screen.name}" skipped: not signed in`);
+                  continue;
                 }
                 ctx = shared;
               } else {
@@ -349,7 +366,7 @@ export async function capture(config: Config, baseUrl: string, log: (m: string) 
             }
           }
         } finally {
-          for (const c of loggedIn.values()) await c.close();
+          for (const c of loggedIn.values()) await c?.close().catch(() => {});
         }
       }
     }

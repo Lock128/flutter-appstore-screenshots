@@ -20,7 +20,10 @@ setup_tool() {
   cd "$REPO_ROOT"
   command -v node >/dev/null || { echo "Error: node (>=20) is required" >&2; exit 1; }
   [ -d node_modules ] || npm ci
-  [ -f dist/cli.js ] || npm run build
+  # Rebuild when dist is missing or older than any source file.
+  if [ ! -f dist/cli.js ] || [ -n "$(find src tsconfig.json -newer dist/cli.js -print -quit)" ]; then
+    npm run build
+  fi
   if ! ls "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"/chromium-* >/dev/null 2>&1; then
     npx playwright install chromium
   fi

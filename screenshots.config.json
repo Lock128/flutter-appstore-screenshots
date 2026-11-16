@@ -1,0 +1,42 @@
+{
+  "webDir": "build/web",
+  "outDir": "screenshots",
+  "devices": [
+    "iphone-6.3",
+    "iphone-6.1",
+    "ipad-13",
+    "play-phone",
+    "play-tablet-10"
+  ],
+  "locales": [
+    "en-US"
+  ],
+  "settleMs": 2000,
+  "enableSemantics": true,
+  "screens": [
+    {
+      "name": "home",
+      "path": "#/"
+    },
+    {
+      "name": "settings",
+      "path": "#/settings",
+      "waitFor": 1000
+    },
+    {
+      "name": "games",
+      "path": "#/spiele",
+      "waitFor": 1000
+    },
+    {
+      "name": "teams",
+      "path": "#/teams",
+      "waitFor": 1000
+    },
+    {
+      "name": "settings2",
+      "path": "#/settings",
+      "waitFor": 1000
+    }
+  ]
+}
