@@ -46,6 +46,16 @@ export interface Config {
   readySelector: string;
   settleMs: number;
   enableSemantics: boolean;
+  /** Max time for page navigation and for the app to become ready (ms). */
+  navigationTimeoutMs: number;
+  /** Max time for each click, type or wait-for-selector step (ms). */
+  actionTimeoutMs: number;
+  /** Extra attempts when opening a page fails. */
+  retries: number;
+  /** Discovery mode: click through clickable elements and capture each new screen. */
+  discover: boolean;
+  /** Maximum number of screens to capture in discovery mode, including the start screen. */
+  maxScreens: number;
   theme: ThemeMode;
   login?: Login;
   screens: Screen[];
@@ -73,6 +83,12 @@ export function parseConfig(raw: unknown): Config {
   if (!Array.isArray(locales) || locales.length === 0 || locales.some((l) => typeof l !== "string")) {
     fail("locales must be a non-empty array of strings");
   }
+  for (const k of ["navigationTimeoutMs", "actionTimeoutMs"]) {
+    if (r[k] !== undefined && (typeof r[k] !== "number" || !(r[k] as number > 0))) fail(`${k} must be a positive number`);
+  }
+  if (r.retries !== undefined && (!Number.isInteger(r.retries) || (r.retries as number) < 0)) fail("retries must be a non-negative integer");
+  if (r.discover !== undefined && typeof r.discover !== "boolean") fail("discover must be a boolean");
+  if (r.maxScreens !== undefined && (!Number.isInteger(r.maxScreens) || (r.maxScreens as number) < 1)) fail("maxScreens must be a positive integer");
   if (r.theme !== undefined && !isThemeMode(r.theme)) fail("theme must be light, dark or both");
   const login = r.login === undefined ? undefined : parseLogin(r.login);
   if (!Array.isArray(r.screens) || r.screens.length === 0) fail("screens must be a non-empty array");
@@ -110,6 +126,11 @@ export function parseConfig(raw: unknown): Config {
     readySelector: typeof r.readySelector === "string" ? r.readySelector : "flt-glass-pane, flutter-view",
     settleMs: typeof r.settleMs === "number" ? r.settleMs : 1500,
     enableSemantics: r.enableSemantics === true,
+    navigationTimeoutMs: (r.navigationTimeoutMs as number | undefined) ?? 60_000,
+    actionTimeoutMs: (r.actionTimeoutMs as number | undefined) ?? 10_000,
+    retries: (r.retries as number | undefined) ?? 2,
+    discover: r.discover === true,
+    maxScreens: (r.maxScreens as number | undefined) ?? 10,
     theme: (r.theme as ThemeMode | undefined) ?? "light",
     login,
     screens,
@@ -174,9 +195,13 @@ function validateAction(a: unknown, where: string): void {
   } else fail(`${where} must have one of click, clickAt, type, scroll, wait`);
 }
 
-/** Built-in config used when no config file exists: all devices, one "home" screen, semantics on. */
+/**
+ * Built-in config used when no config file exists: all devices, semantics on, discovery mode on.
+ * The only fixed screen is "home" (the start route); the rest is found by clicking, so nothing
+ * depends on text that may not exist in the app.
+ */
 export function defaultConfig(source: { url?: string; webDir?: string }): Config {
-  return parseConfig({ ...source, enableSemantics: true, screens: [{ name: "home" }] });
+  return parseConfig({ ...source, enableSemantics: true, discover: true, screens: [{ name: "home" }] });
 }
 
 export function loadConfig(file: string): Config {

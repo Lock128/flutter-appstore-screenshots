@@ -42,8 +42,14 @@ program
   .option("--device <names...>", "limit to these device presets")
   .option("--out <dir>", "output directory")
   .option("--theme <mode>", "light, dark or both (overrides config)")
+  .option("--nav-timeout <ms>", "max time to open a page and wait for the Flutter view (default 60000)")
+  .option("--action-timeout <ms>", "max time for each click/type step (default 10000)")
+  .option("--retries <n>", "extra attempts when opening a page fails (default 2)")
+  .option("--discover", "click through clickable elements and capture each new screen (default without a config file)")
+  .option("--no-discover", "disable discovery mode")
+  .option("--max-screens <n>", "max screens to capture in discovery mode (default 10)")
   .option("--build", "run flutter build web --release in flutterProject first")
-  .action(async (o: { config: string; url?: string; webDir?: string; device?: string[]; out?: string; theme?: string; build?: boolean }) => {
+  .action(async (o: { config: string; url?: string; webDir?: string; device?: string[]; out?: string; theme?: string; build?: boolean; navTimeout?: string; actionTimeout?: string; retries?: string; discover?: boolean; maxScreens?: string }) => {
     const config =
       !existsSync(o.config) && (o.url || o.webDir) ? defaultConfig({ url: o.url, webDir: o.webDir }) : loadConfig(o.config);
     if (o.url) config.url = o.url;
@@ -54,6 +60,18 @@ program
       if (o.theme !== "light" && o.theme !== "dark" && o.theme !== "both") throw new Error("--theme must be light, dark or both");
       config.theme = o.theme;
     }
+
+    const num = (v: string | undefined, flag: string, min: number): number | undefined => {
+      if (v === undefined) return undefined;
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < min) throw new Error(`${flag} must be an integer >= ${min}`);
+      return n;
+    };
+    config.navigationTimeoutMs = num(o.navTimeout, "--nav-timeout", 1) ?? config.navigationTimeoutMs;
+    config.actionTimeoutMs = num(o.actionTimeout, "--action-timeout", 1) ?? config.actionTimeoutMs;
+    config.retries = num(o.retries, "--retries", 0) ?? config.retries;
+    config.maxScreens = num(o.maxScreens, "--max-screens", 1) ?? config.maxScreens;
+    if (o.discover !== undefined) config.discover = o.discover;
 
     let webDir = config.webDir;
     if (o.build) {
