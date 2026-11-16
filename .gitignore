@@ -4,3 +4,4 @@ screenshots
 *.log
 auth.json
 .auth/
+scripts/*.local.sh
