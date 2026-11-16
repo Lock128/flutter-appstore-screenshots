@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { Command } from "commander";
 import { capture } from "./capture.js";
-import { loadConfig } from "./config.js";
+import { defaultConfig, loadConfig } from "./config.js";
 import { serveDir } from "./server.js";
 import { DEVICES, viewportFor } from "./sizes.js";
 
@@ -41,13 +41,19 @@ program
   .option("--web-dir <dir>", "directory containing a built Flutter web app (build/web)")
   .option("--device <names...>", "limit to these device presets")
   .option("--out <dir>", "output directory")
+  .option("--theme <mode>", "light, dark or both (overrides config)")
   .option("--build", "run flutter build web --release in flutterProject first")
-  .action(async (o: { config: string; url?: string; webDir?: string; device?: string[]; out?: string; build?: boolean }) => {
-    const config = loadConfig(o.config);
+  .action(async (o: { config: string; url?: string; webDir?: string; device?: string[]; out?: string; theme?: string; build?: boolean }) => {
+    const config =
+      !existsSync(o.config) && (o.url || o.webDir) ? defaultConfig({ url: o.url, webDir: o.webDir }) : loadConfig(o.config);
     if (o.url) config.url = o.url;
     if (o.webDir) config.webDir = o.webDir;
     if (o.device) config.devices = o.device;
     if (o.out) config.outDir = o.out;
+    if (o.theme) {
+      if (o.theme !== "light" && o.theme !== "dark" && o.theme !== "both") throw new Error("--theme must be light, dark or both");
+      config.theme = o.theme;
+    }
 
     let webDir = config.webDir;
     if (o.build) {
