@@ -84,6 +84,8 @@ Output goes to `<outDir>/<apple|google>/<device>/<locale>/<NN>-<name>.png`.
 
 Actions: `{"click": "Label or CSS selector"}`, `{"clickAt": [x, y]}` (CSS pixels), `{"type": "selector", "text": "..."}`, `{"scroll": 400}`, `{"wait": 500}`.
 
+A complete real-world example is [`screenshots.config.teamcorner.json`](screenshots.config.teamcorner.json). It captures the routes of the TeamCorner Flutter app (path URLs, German UI, sign-in with `SCREENSHOT_USER` and `SCREENSHOT_PASSWORD`) and uses generous timeouts. Admin screens only render for an admin account.
+
 ## Discovery mode and resilience
 
 Pages are opened with `domcontentloaded` and then the tool waits for the Flutter view element, because Flutter web assets can keep the `load` event pending past 30 seconds. A failed open is retried.

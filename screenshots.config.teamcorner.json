@@ -1,0 +1,233 @@
+{
+  "url": "https://app.teamcorner.app",
+  "outDir": "screenshots/teamcorner",
+  "devices": [
+    "iphone-6.9",
+    "iphone-6.5",
+    "ipad-13",
+    "play-phone",
+    "play-tablet-10"
+  ],
+  "locales": [
+    "de-DE"
+  ],
+  "settleMs": 3000,
+  "enableSemantics": true,
+  "theme": "both",
+  "navigationTimeoutMs": 120000,
+  "actionTimeoutMs": 30000,
+  "retries": 3,
+  "login": {
+    "path": "/login",
+    "actions": [
+      {
+        "wait": 1500
+      },
+      {
+        "type": "input[aria-label='E-Mail']",
+        "text": "${SCREENSHOT_USER}"
+      },
+      {
+        "type": "input[aria-label='Passwort']",
+        "text": "${SCREENSHOT_PASSWORD}"
+      },
+      {
+        "click": "text=/^Anmelden$/"
+      }
+    ],
+    "waitFor": 6000
+  },
+  "screens": [
+    {
+      "name": "01-home",
+      "path": "/"
+    },
+    {
+      "name": "02-login",
+      "path": "/login"
+    },
+    {
+      "name": "03-register",
+      "path": "/login",
+      "actions": [
+        {
+          "click": "Konto erstellen"
+        },
+        {
+          "wait": 800
+        }
+      ]
+    },
+    {
+      "name": "05-forgot-password",
+      "path": "/login",
+      "actions": [
+        {
+          "click": "Passwort vergessen?"
+        },
+        {
+          "wait": 800
+        }
+      ]
+    },
+    {
+      "name": "06-games",
+      "path": "/spiele",
+      "waitFor": 2000
+    },
+    {
+      "name": "07-club-stats",
+      "path": "/spiele/stats",
+      "waitFor": 2000
+    },
+    {
+      "name": "08-teams",
+      "path": "/mannschaften",
+      "waitFor": 2000
+    },
+    {
+      "name": "09-privacy",
+      "path": "/privacy"
+    },
+    {
+      "name": "10-terms",
+      "path": "/terms"
+    },
+    {
+      "name": "11-help",
+      "path": "/help"
+    },
+    {
+      "name": "20-events",
+      "path": "/events",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "21-recording",
+      "path": "/recording",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "22-gameplay",
+      "path": "/gameplay",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "23-team-fund",
+      "path": "/mannschaftskasse",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "24-feedback",
+      "path": "/feedback",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "25-settings",
+      "path": "/settings",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "26-family",
+      "path": "/family",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "27-family-invitations",
+      "path": "/family/invitations",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "28-zn-schiri",
+      "path": "/zn-schiri",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "29-onboarding",
+      "path": "/onboarding",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "30-join-requests",
+      "path": "/join-requests",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "40-team-admin",
+      "path": "/team",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "41-admin",
+      "path": "/admin",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-members-roles",
+      "path": "/admin/members-roles",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-teams",
+      "path": "/admin/teams",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-events",
+      "path": "/admin/events",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-games",
+      "path": "/admin/games",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-kasse",
+      "path": "/admin/kasse",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-join-requests",
+      "path": "/admin/join-requests",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-groups",
+      "path": "/admin/groups",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-users",
+      "path": "/admin/users",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "42-admin-whatsapp-bot",
+      "path": "/admin/whatsapp-bot",
+      "requiresLogin": true,
+      "waitFor": 2000
+    }
+  ]
+}
