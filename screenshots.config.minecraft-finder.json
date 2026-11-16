@@ -1,0 +1,83 @@
+{
+  "metadata": {
+    "app": "minecraft-finder",
+    "githubRepo": "https://github.com/Lock128/minecraft-finder",
+    "flutterProject": "flutter_app",
+    "flutterProjectPath": "minecraft-finder/flutter_app",
+    "appUrl": "https://minecraft.lockhead.cloud",
+    "note": "Single page app without routes and without login. Screens are tabs; verify labels against the current build."
+  },
+  "url": "https://minecraft.lockhead.cloud",
+  "outDir": "screenshots/minecraft-finder",
+  "devices": [
+    "iphone-6.9",
+    "iphone-6.5",
+    "ipad-13",
+    "play-phone",
+    "play-tablet-10"
+  ],
+  "locales": [
+    "en-US"
+  ],
+  "settleMs": 3000,
+  "enableSemantics": true,
+  "theme": "both",
+  "navigationTimeoutMs": 120000,
+  "actionTimeoutMs": 30000,
+  "retries": 3,
+  "screens": [
+    {
+      "name": "01-search",
+      "path": "/",
+      "waitFor": 2000
+    },
+    {
+      "name": "02-results",
+      "path": "/",
+      "actions": [
+        {
+          "click": "Results"
+        },
+        {
+          "wait": 1000
+        }
+      ]
+    },
+    {
+      "name": "03-user-guide",
+      "path": "/",
+      "actions": [
+        {
+          "click": "User Guide"
+        },
+        {
+          "wait": 1000
+        }
+      ]
+    },
+    {
+      "name": "04-favorites",
+      "path": "/",
+      "actions": [
+        {
+          "click": "Favorites"
+        },
+        {
+          "wait": 1000
+        }
+      ]
+    },
+    {
+      "name": "05-bedwars",
+      "path": "/",
+      "actions": [
+        {
+          "click": "Bedwars"
+        },
+        {
+          "wait": 1000
+        }
+      ]
+    }
+  ]
+}
