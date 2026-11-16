@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;font-family:sans-serif;background:linear-gradient(#4285f4,#0d47a1);color:#fff;min-height:100vh}
+main{padding:24px}button{font-size:18px;padding:12px 20px;border:0;border-radius:8px}
+</style></head>
+<body><flutter-view><main>
+<h1 id="title">Demo App</h1><p id="route"></p>
+<button id="go" onclick="document.getElementById('title').textContent='Clicked'">Get started</button>
+</main></flutter-view>
+<script>document.getElementById('route').textContent='Route: '+(location.hash||'#/');</script>
+</body></html>

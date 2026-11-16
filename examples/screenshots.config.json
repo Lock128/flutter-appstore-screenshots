@@ -1,0 +1,10 @@
+{
+  "webDir": "examples/demo-app",
+  "outDir": "screenshots",
+  "devices": ["iphone-6.9", "play-phone", "play-feature-graphic"],
+  "settleMs": 200,
+  "screens": [
+    { "name": "home", "path": "#/" },
+    { "name": "clicked", "path": "#/settings", "actions": [{ "click": "#go" }] }
+  ]
+}

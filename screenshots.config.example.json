@@ -1,0 +1,13 @@
+{
+  "webDir": "build/web",
+  "outDir": "screenshots",
+  "devices": ["iphone-6.9", "iphone-6.5", "ipad-13", "play-phone", "play-tablet-10"],
+  "locales": ["en-US"],
+  "settleMs": 2000,
+  "enableSemantics": true,
+  "screens": [
+    { "name": "home", "path": "#/" },
+    { "name": "settings", "path": "#/settings", "waitFor": 1000 },
+    { "name": "details-dark", "path": "#/", "theme": "dark", "actions": [{ "click": "Get started" }, { "wait": 500 }] }
+  ]
+}
