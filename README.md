@@ -54,6 +54,18 @@ Each script takes an optional output directory as the last argument (default `./
 
 The CLI also runs without a config file when you pass `--url` or `--web-dir` and no `screenshots.config.json` exists. It then captures the `home` screen on all devices with `enableSemantics` and discovery mode on. No text such as button labels is assumed.
 
+### TeamCorner convenience script
+
+`scripts/screenshots-teamcorner.sh [out-dir]` captures the TeamCorner app with `screenshots.config.teamcorner.json`. Edit the `SETTINGS` block at the top of the script: `SCREENSHOT_USER`, `SCREENSHOT_PASSWORD`, `URL` (default `https://app.teamcorner.app`), `DEVICES`, `THEME`, `OUT_DIR_SETTING` and `EXTRA_FLAGS` (for example `"--max-screens 40 --nav-timeout 90000"`). Environment variables and the `out-dir` argument override the script values. The script stops with an error when the user or password is empty, and it never prints the password.
+
+Do not commit real credentials. Put your settings in `scripts/screenshots-teamcorner.local.sh` instead. It is git-ignored and sourced when present:
+
+```bash
+SCREENSHOT_USER="you@example.com"
+SCREENSHOT_PASSWORD="secret"
+THEME="both"
+```
+
 ### Commands
 
 - `list-devices`: print presets with store and pixel sizes
