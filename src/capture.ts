@@ -45,11 +45,46 @@ export function describeAction(a: Action): string {
   return `wait ${a.wait}ms`;
 }
 
+/**
+ * Resolve a click target. Flutter semantics expose labels as aria-label (older
+ * engines) or as text nodes (newer ones), so plain text is matched against
+ * accessible names, labels and text content. Explicit selectors (text=, css=,
+ * or something starting with . # [ or containing >) are passed to Playwright as is.
+ */
+export function isExplicitSelector(s: string): boolean {
+  return /^(text|css|xpath|role|id)=/.test(s) || /^[.#\[]/.test(s) || s.includes(" > ");
+}
+
+async function clickByLabel(page: Page, label: string, timeout: number): Promise<void> {
+  const candidates = [
+    page.getByRole("tab", { name: label }),
+    page.getByRole("button", { name: label }),
+    page.getByRole("link", { name: label }),
+    page.getByLabel(label),
+    page.getByText(label),
+    page.locator(`flt-semantics[aria-label*="${label.replace(/"/g, '\\"')}"]`),
+  ];
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    for (const c of candidates) {
+      if ((await c.count().catch(() => 0)) > 0) {
+        await c.first().click({ timeout });
+        return;
+      }
+    }
+    await page.waitForTimeout(250);
+  }
+  const names = await page
+    .locator("flt-semantics[aria-label], flt-semantics[role]")
+    .evaluateAll((els) => els.slice(0, 40).map((e) => e.getAttribute("aria-label") || e.textContent || "").filter(Boolean))
+    .catch(() => [] as string[]);
+  throw new Error(`Could not find "${label}" to click (is enableSemantics on?). Semantics labels found: ${JSON.stringify(names)}`);
+}
+
 async function runAction(page: Page, a: Action, timeout: number): Promise<void> {
   if ("click" in a) {
-    // Plain text first (Flutter canvas apps need semantics), otherwise treat as a selector
-    const loc = a.click.startsWith("text=") || /^[.#\[]|[>\s]/.test(a.click) ? page.locator(a.click) : page.getByText(a.click);
-    await loc.first().click({ timeout });
+    if (isExplicitSelector(a.click)) await page.locator(a.click).first().click({ timeout });
+    else await clickByLabel(page, a.click, timeout);
   } else if ("clickAt" in a) {
     await page.mouse.click(a.clickAt[0], a.clickAt[1]);
   } else if ("type" in a) {
@@ -80,6 +115,7 @@ async function openReady(page: Page, config: Config, url: string, warn: (m: stri
   }
   if (config.enableSemantics) {
     await page.locator("flt-semantics-placeholder").evaluate((el) => (el as HTMLElement).click(), undefined, { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector("flt-semantics", { state: "attached", timeout: 10_000 }).catch(() => warn("Warning: Flutter semantics tree did not appear; click by label will fail"));
   }
   await page.waitForTimeout(config.settleMs);
 }
