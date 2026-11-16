@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "app": "places-unlock",
+    "githubRepo": "https://github.com/Lock128/places-unlock",
+    "flutterProject": "frontend/src",
+    "flutterProjectPath": "places-unlock/frontend/src",
+    "appUrl": "https://app.unscratchtheworld.lockhead.cloud",
+    "note": "Routes taken from the app's router. Verify labels and routes against the current build."
+  },
+  "url": "https://app.unscratchtheworld.lockhead.cloud",
+  "outDir": "screenshots/places-unlock",
+  "devices": [
+    "iphone-6.9",
+    "iphone-6.5",
+    "ipad-13",
+    "play-phone",
+    "play-tablet-10"
+  ],
+  "locales": [
+    "en-US"
+  ],
+  "settleMs": 3000,
+  "enableSemantics": true,
+  "theme": "both",
+  "navigationTimeoutMs": 120000,
+  "actionTimeoutMs": 30000,
+  "retries": 3,
+  "login": {
+    "path": "#/signin",
+    "actions": [
+      {
+        "wait": 1500
+      },
+      {
+        "type": "input[aria-label='Email']",
+        "text": "${SCREENSHOT_USER}"
+      },
+      {
+        "type": "input[aria-label='Password']",
+        "text": "${SCREENSHOT_PASSWORD}"
+      },
+      {
+        "click": "text=/^Sign In$/"
+      }
+    ],
+    "waitFor": 6000
+  },
+  "screens": [
+    {
+      "name": "01-signin",
+      "path": "#/signin",
+      "waitFor": 2000
+    },
+    {
+      "name": "02-register",
+      "path": "#/register",
+      "waitFor": 2000
+    },
+    {
+      "name": "03-reset-password",
+      "path": "#/reset-password",
+      "waitFor": 2000
+    },
+    {
+      "name": "20-map",
+      "path": "#/map",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "21-places",
+      "path": "#/places",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "22-stats",
+      "path": "#/stats",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "23-profile",
+      "path": "#/profile",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "24-challenges",
+      "path": "#/profile/challenges",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "25-completion",
+      "path": "#/profile/completion",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "26-friends",
+      "path": "#/profile/friends",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "27-leaderboard",
+      "path": "#/profile/leaderboard",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "28-nearby",
+      "path": "#/profile/nearby",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "29-appearance",
+      "path": "#/profile/appearance",
+      "requiresLogin": true,
+      "waitFor": 2000
+    }
+  ]
+}

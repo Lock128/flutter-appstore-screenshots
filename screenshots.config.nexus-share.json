@@ -1,0 +1,179 @@
+{
+  "metadata": {
+    "app": "nexus-share",
+    "githubRepo": "https://github.com/Lock128/nexus-share",
+    "flutterProject": "frontend/src",
+    "flutterProjectPath": "nexus-share/frontend/src",
+    "appUrl": "https://app.nexus-share.com",
+    "note": "Routes taken from the app's router. Verify labels and routes against the current build."
+  },
+  "url": "https://app.nexus-share.com",
+  "outDir": "screenshots/nexus-share",
+  "devices": [
+    "iphone-6.9",
+    "iphone-6.5",
+    "ipad-13",
+    "play-phone",
+    "play-tablet-10"
+  ],
+  "locales": [
+    "en-US"
+  ],
+  "settleMs": 3000,
+  "enableSemantics": true,
+  "theme": "both",
+  "navigationTimeoutMs": 120000,
+  "actionTimeoutMs": 30000,
+  "retries": 3,
+  "login": {
+    "path": "/login",
+    "actions": [
+      {
+        "wait": 1500
+      },
+      {
+        "type": "input[aria-label='Email']",
+        "text": "${SCREENSHOT_USER}"
+      },
+      {
+        "type": "input[aria-label='Password']",
+        "text": "${SCREENSHOT_PASSWORD}"
+      },
+      {
+        "click": "text=/^Sign In$/"
+      }
+    ],
+    "waitFor": 6000
+  },
+  "screens": [
+    {
+      "name": "01-home",
+      "path": "/",
+      "waitFor": 2000
+    },
+    {
+      "name": "02-landing",
+      "path": "/landing",
+      "waitFor": 2000
+    },
+    {
+      "name": "03-login",
+      "path": "/login",
+      "waitFor": 2000
+    },
+    {
+      "name": "04-register",
+      "path": "/register",
+      "waitFor": 2000
+    },
+    {
+      "name": "05-pricing",
+      "path": "/pricing",
+      "waitFor": 2000
+    },
+    {
+      "name": "06-privacy-policy",
+      "path": "/privacy-policy",
+      "waitFor": 2000
+    },
+    {
+      "name": "07-terms-of-service",
+      "path": "/terms-of-service",
+      "waitFor": 2000
+    },
+    {
+      "name": "08-contact-us",
+      "path": "/contact-us",
+      "waitFor": 2000
+    },
+    {
+      "name": "09-mobile-apps",
+      "path": "/mobile-apps",
+      "waitFor": 2000
+    },
+    {
+      "name": "20-posts",
+      "path": "/home",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "21-create-post",
+      "path": "/create",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "22-calendar",
+      "path": "/calendar",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "23-month",
+      "path": "/month",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "24-statistics",
+      "path": "/statistics",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "25-social-connections",
+      "path": "/social-connections",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "26-ai-compose",
+      "path": "/ai-compose",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "27-ai-proposals",
+      "path": "/ai-proposals",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "28-recurring-posts",
+      "path": "/recurring-posts",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "29-bulk-create-posts",
+      "path": "/bulk-create-posts",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "30-blog-cross-posting",
+      "path": "/blog-cross-posting",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "31-streak",
+      "path": "/streak",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "32-settings",
+      "path": "/settings",
+      "requiresLogin": true,
+      "waitFor": 2000
+    },
+    {
+      "name": "33-subscription",
+      "path": "/subscription/",
+      "requiresLogin": true,
+      "waitFor": 2000
+    }
+  ]
+}

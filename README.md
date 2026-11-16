@@ -66,6 +66,21 @@ SCREENSHOT_PASSWORD="secret"
 THEME="both"
 ```
 
+### Example configs and scripts for other Flutter apps
+
+Each app below has a config (`screenshots.config.<app>.json`) and a script (`scripts/screenshots-<app>.sh`) that work like the TeamCorner ones: same `SETTINGS` block, git-ignored `scripts/screenshots-<app>.local.sh` overrides, and no credentials in the repo (`${SCREENSHOT_USER}` and `${SCREENSHOT_PASSWORD}` are read from the environment). The routes come from each app's router. Check the labels and routes against the current build before a store run. Each config has a `metadata` block (ignored by the tool) with the GitHub repository, the Flutter project path and the app URL. The script headers repeat that information.
+
+| App | GitHub repository | Flutter project | App URL | Locale | Login |
+| --- | --- | --- | --- | --- | --- |
+| nexus-share | [Lock128/nexus-share](https://github.com/Lock128/nexus-share) | `frontend/src` | https://app.nexus-share.com | en-US | yes |
+| pegasus-galaxy | [Lock128/pegasus-galaxy](https://github.com/Lock128/pegasus-galaxy) | `frontend/src` | https://app.pegasus-galaxy.net | en-US | yes |
+| porto | [Lock128/porto](https://github.com/Lock128/porto) | `frontend/src` | https://app.porto-app.eu | de-DE | yes |
+| train-with-joe | [Lock128/train-with-joe](https://github.com/Lock128/train-with-joe) | `frontend/src` | https://app.trainwithjoe.app | en-US | yes |
+| places-unlock | [Lock128/places-unlock](https://github.com/Lock128/places-unlock) | `frontend/src` | https://app.unscratchtheworld.lockhead.cloud | en-US | yes |
+| minecraft-finder | [Lock128/minecraft-finder](https://github.com/Lock128/minecraft-finder) | `flutter_app` | https://minecraft.lockhead.cloud | en-US | no (tabs only) |
+
+Run for example `SCREENSHOT_USER=me@example.com SCREENSHOT_PASSWORD=... scripts/screenshots-porto.sh out`. nexus-share uses path URLs. The other apps use Flutter's default hash URLs (`#/route`). The minecraft-finder app is a single page, so its config opens tabs by label and needs no login.
+
 ### Commands
 
 - `list-devices`: print presets with store and pixel sizes

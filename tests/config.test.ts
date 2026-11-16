@@ -3,6 +3,7 @@ import { defaultConfig, parseConfig, themesFor, screenNeedsLogin } from "../src/
 import { buildScreenUrl, headersForRequest, outputPath, readPngSize, resolveAction, substituteEnv } from "../src/capture.js";
 import { resolveFile } from "../src/server.js";
 import path from "node:path";
+import fs from "node:fs";
 
 const ok = { url: "http://x", screens: [{ name: "home" }] };
 
@@ -113,5 +114,14 @@ describe("headersForRequest", () => {
   it("adds headers for the app origin only", () => {
     expect(headersForRequest("http://h:1/a.js", "http://h:1/", { Authorization: "x" }, { a: "b" })).toEqual({ a: "b", Authorization: "x" });
     expect(headersForRequest("https://www.gstatic.com/f.js", "http://h:1/", { Authorization: "x" })).toBeUndefined();
+  });
+});
+
+describe("example configs", () => {
+  const files = fs.readdirSync(".").filter((f) => /^screenshots\.config\..*\.json$/.test(f));
+  it.each(files)("%s parses", (f) => {
+    const c = parseConfig(JSON.parse(fs.readFileSync(f, "utf8")));
+    expect(c.screens.length).toBeGreaterThan(0);
+    expect(fs.readFileSync(f, "utf8")).not.toMatch(/password"\s*:\s*"(?!\$\{)/i);
   });
 });

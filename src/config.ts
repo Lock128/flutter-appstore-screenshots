@@ -40,6 +40,8 @@ export interface Config {
   url?: string;
   webDir?: string;
   flutterProject?: string;
+  /** Free-form info about the app (repo, project path, URL). Ignored by the tool. */
+  metadata?: Record<string, unknown>;
   outDir: string;
   devices: string[];
   locales: string[];
