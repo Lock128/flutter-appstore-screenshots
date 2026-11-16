@@ -1,0 +1,57 @@
+name: Store screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_repo:
+        description: "Flutter app repository (owner/name)"
+        required: true
+      app_ref:
+        description: "Branch, tag or SHA of the app"
+        required: false
+        default: ""
+      config:
+        description: "Config file in this repo"
+        required: false
+        default: "screenshots.config.json"
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.app_repo }}
+          ref: ${{ inputs.app_ref }}
+          path: app
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.5"
+          channel: stable
+          cache: true
+
+      - name: Build Flutter web
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter build web --release --pwa-strategy none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+
+      - name: Capture
+        run: node dist/cli.js capture --config "${{ inputs.config }}" --web-dir app/build/web
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-screenshots
+          path: screenshots/
